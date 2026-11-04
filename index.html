@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESP32 Smart Control</title>
+<style>
+:root{--bg:#070b14;--panel:#101a2b;--panel2:#142238;--cyan:#00e5ff;--blue:#547cff;--muted:#91a4bd;--line:#24344c;--green:#31e6a1;--orange:#ffb454}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#10294a 0,transparent 38%),radial-gradient(ellipse at 100% 15%,#18204a 0,transparent 30%),var(--bg);color:#edf7ff;font:15px/1.45 Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:22px clamp(16px,4vw,54px);border-bottom:1px solid #ffffff12;backdrop-filter:blur(16px);position:sticky;top:0;background:#070b14d9;z-index:5}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:44px;height:44px;border:1px solid #00e5ff88;border-radius:14px;display:grid;place-items:center;color:var(--cyan);font-size:24px;box-shadow:0 0 25px #00e5ff20}.brand strong{display:block;letter-spacing:.08em}.brand small{color:var(--muted);letter-spacing:.2em;font-size:10px}.status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 12px currentColor}
+main{max-width:1250px;margin:auto;padding:30px clamp(16px,4vw,54px) 60px}.eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.2em;font-weight:700}.hero{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:8px 0 26px}.hero h1{font-size:clamp(27px,4vw,42px);margin:5px 0;font-weight:700;letter-spacing:-.04em}.hero p{color:var(--muted);margin:0}.chip{border:1px solid #00e5ff55;color:var(--cyan);padding:8px 12px;border-radius:999px;font-size:11px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{background:linear-gradient(145deg,#142238ed,#0d1727f2);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 12px 40px #0003;min-width:0}.sensor{grid-column:span 3}.wide{grid-column:span 8}.side{grid-column:span 4}.full{grid-column:span 12}.cardhead{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;letter-spacing:.12em}.icon{color:var(--cyan);font-size:22px}.metric{font-size:clamp(30px,4vw,43px);font-weight:700;margin:14px 0 0;letter-spacing:-.04em}.unit{font-size:14px;color:var(--muted);font-weight:500}.sub{font-size:12px;color:var(--muted);margin-top:5px}.glow{color:var(--cyan);text-shadow:0 0 18px #00e5ff55}
+.section-title{font-size:13px;letter-spacing:.15em;margin:0 0 15px;color:#d9eaff}.relays{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.relay{background:#0b1423;border:1px solid var(--line);border-radius:15px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}.relay b{display:block}.relay small{color:var(--muted)}.toggle{width:48px;height:27px;border-radius:30px;background:#34445b;border:0;cursor:pointer;padding:3px;transition:.2s}.toggle:after{content:"";display:block;width:21px;height:21px;border-radius:50%;background:#d5e4f4;transition:.2s}.toggle.on{background:#007d91;box-shadow:0 0 16px #00e5ff44}.toggle.on:after{transform:translateX(21px);background:white}
+.radar-wrap{display:grid;grid-template-columns:minmax(190px,1fr) minmax(130px,.8fr);align-items:center;gap:20px}.radar{width:100%;max-width:310px;aspect-ratio:1;border-radius:50%;position:relative;overflow:hidden;background:repeating-radial-gradient(circle at 50% 50%,transparent 0 19%,#00e5ff24 19.5% 20%,transparent 20.5% 39%,#00e5ff24 39.5% 40%,transparent 40.5% 59%,#00e5ff24 59.5% 60%,transparent 60.5%),linear-gradient(90deg,transparent 49.7%,#00e5ff35 50%,transparent 50.3%),linear-gradient(0deg,transparent 49.7%,#00e5ff35 50%,transparent 50.3%),#061322}.sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 300deg,#00e5ff00 320deg,#00e5ff66 360deg);animation:spin 4s linear infinite}.blip{position:absolute;left:68%;top:29%;width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 15px var(--green)}@keyframes spin{to{transform:rotate(360deg)}}
+input{background:#081322;color:#eaf7ff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;outline:none}input:focus{border-color:var(--cyan)}button.primary{background:linear-gradient(90deg,#007d91,#375bd9);border:0;color:white;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}button.secondary{background:#1b2a40;border:1px solid var(--line);color:#dcecff;border-radius:10px;padding:10px 14px;cursor:pointer}.row{display:flex;gap:9px;align-items:center}.row>*{min-width:0}.row input{flex:1}.note{font-size:11px;color:var(--muted);line-height:1.6}.chart{height:150px;width:100%;display:block}.history-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:10px}
+footer{text-align:center;color:#61758e;font-size:11px;margin-top:25px}
+@media(max-width:850px){.sensor{grid-column:span 6}.wide{grid-column:span 12}.side{grid-column:span 12}}
+@media(max-width:520px){header{padding:14px}.hero{align-items:start;flex-direction:column}.sensor{grid-column:span 6}.card{padding:15px}.relays{grid-template-columns:1fr}.radar-wrap{grid-template-columns:1fr}.radar{max-width:240px;margin:auto}.row{flex-wrap:wrap}}
+
+.people-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.people-stat{background:#0b1423;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.people-number{font-size:clamp(25px,5vw,38px);font-weight:750;color:var(--cyan);margin-top:5px}
+.people-actions{margin-top:14px}
+@media(max-width:520px){.people-grid{grid-template-columns:repeat(2,1fr)}}
+
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">⌁</div><div><strong>ESP32 SMART CONTROL</strong><small>INTELLIGENT DEVICE PLATFORM</small></div></div><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">DEMO MODE</span></div></header>
+<main>
+<div class="hero"><div><div class="eyebrow">SYSTEM OVERVIEW / 01</div><h1>Control your world<span class="glow">.</span></h1><p>Sensor intelligence and device control in one place.</p></div><div class="chip">● SECURE DASHBOARD CONCEPT</div></div>
+<section class="grid">
+<div class="card sensor"><div class="cardhead"><span>TEMPERATURE</span><span class="icon">♨</span></div><div class="metric" id="temp">--<span class="unit"> °C</span></div><div class="sub">DS18B20 sensor</div></div>
+<div class="card sensor"><div class="cardhead"><span>OBJECT DISTANCE</span><span class="icon">⌖</span></div><div class="metric" id="dist">--<span class="unit"> cm</span></div><div class="sub">HC-SR04 ultrasonic</div></div>
+<div class="card sensor"><div class="cardhead"><span>ACTIVE RELAYS</span><span class="icon">ϟ</span></div><div class="metric" id="active">0<span class="unit"> / 4</span></div><div class="sub">Output channels enabled</div></div>
+<div class="card sensor"><div class="cardhead"><span>DEVICE LINK</span><span class="icon">⌁</span></div><div class="metric" style="font-size:25px" id="link">OFFLINE</div><div class="sub">Connection state</div></div>
+<div class="card wide"><h2 class="section-title">ULTRASONIC RADAR</h2><div class="radar-wrap"><div class="radar"><div class="sweep"></div><div class="blip"></div></div><div><div class="eyebrow">LIVE RANGE</div><div class="metric" id="radarValue">--<span class="unit"> cm</span></div><p class="note">Radar-style visual preview. A single fixed HC-SR04 measures distance in its direction; rotating scan requires a servo motor.</p></div></div></div>
+<div class="card side"><h2 class="section-title">DEVICE CONNECTION</h2><label class="note" for="endpoint">ESP32 local endpoint (when available)</label><div style="height:7px"></div><input id="endpoint" value="http://192.168.1.100" placeholder="http://ESP32-IP"><div style="height:10px"></div><div class="row"><button class="primary" id="connect">Connect</button><button class="secondary" id="demo">Demo</button></div><p class="note" id="connectionMsg">Demo values are simulated. Connect requires a compatible ESP32 HTTP API and matching network access.</p></div>
+<div class="card full"><div class="cardhead"><h2 class="section-title">RELAY CONTROL</h2><span class="note">MANUAL CONTROL</span></div><div class="relays" id="relays"></div><p class="note">In demo mode, switches only change this webpage. Physical control is enabled only after a real ESP32 API responds successfully.</p></div>
+
+<div class="card full" id="peopleCounter">
+  <div class="cardhead"><h2 class="section-title">PEOPLE COUNTER</h2><span class="note" id="peopleMode">DEMO COUNT</span></div>
+  <div class="people-grid">
+    <div class="people-stat"><div class="note">TOTAL PASSAGES</div><div class="people-number" id="peopleTotal">0</div></div>
+    <div class="people-stat"><div class="note">ENTRY (IN)</div><div class="people-number" id="peopleIn">0</div></div>
+    <div class="people-stat"><div class="note">EXIT (OUT)</div><div class="people-number" id="peopleOut">0</div></div>
+    <div class="people-stat"><div class="note">CURRENTLY INSIDE*</div><div class="people-number" id="peopleInside">0</div></div>
+  </div>
+  <div class="row people-actions"><button class="secondary" id="simulatePass">Simulate person passing</button><button class="secondary" id="resetPeople">Reset demo count</button></div>
+  <p class="note">*Inside count is an estimate based on IN minus OUT, starting from zero. Reliable direction detection needs two sensors placed in sequence at the entrance. Demo counts are not real sensor readings.</p>
+</div>
+
+<div class="card full"><div class="cardhead"><h2 class="section-title">SENSOR HISTORY</h2><span class="note">DEMO TREND</span></div><canvas class="chart" id="chart"></canvas><div class="history-labels"><span>Earlier</span><span>Recent</span><span>Now</span></div></div>
+</section>
+<footer>ESP32 SMART CONTROL · WEB PREVIEW · REAL DEVICE CONNECTION REQUIRES FIRMWARE + NETWORK CONFIGURATION</footer>
+</main>
+<script>
+const names=['Relay 1 · Pump','Relay 2 · Fan','Relay 3 · Light','Relay 4 · Auxiliary'];let states=[false,false,false,false],demoMode=true,timer=null,temps=[24,24.4,24.2,24.8,25,24.7,25.2,25.1,25.5,25.3,25.8,25.6];
+const $=id=>document.getElementById(id);
+function renderRelays(){$('relays').innerHTML=names.map((n,i)=>`<div class="relay"><div><b>${n}</b><small>${states[i]?'ON':'OFF'}</small></div><button class="toggle ${states[i]?'on':''}" aria-label="Toggle ${n}" data-i="${i}"></button></div>`).join('');document.querySelectorAll('.toggle').forEach(b=>b.onclick=()=>setRelay(+b.dataset.i,!states[+b.dataset.i]));$('active').innerHTML=states.filter(Boolean).length+'<span class="unit"> / 4</span>'}
+async function setRelay(i,v){if(!demoMode){try{const u=new URL('/relay', $('endpoint').value);u.searchParams.set('ch',i+1);u.searchParams.set('state',v?1:0);const r=await fetch(u);if(!r.ok)throw Error();states[i]=v;}catch(e){$('connectionMsg').textContent='Relay command failed. Check device/API and browser network permissions.';return}}else states[i]=v;renderRelays()}
+function draw(){const c=$('chart'),dpr=devicePixelRatio||1,w=c.clientWidth,h=150;c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);x.strokeStyle='#00e5ff';x.lineWidth=2;x.beginPath();temps.forEach((v,i)=>{let px=i/(temps.length-1)*w,py=h-15-(v-20)*12;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fillStyle='#00e5ff16';x.fill()}
+function updateDemo(){if(!demoMode)return;let t=25+Math.random()*2.5,d=35+Math.random()*35;$('temp').innerHTML=t.toFixed(1)+'<span class="unit"> °C</span>';$('dist').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';temps.push(t);temps.shift();draw()}
+async function connect(){demoMode=false;$('connectionMsg').textContent='Connecting to ESP32…';try{await poll();timer=setInterval(poll,2500)}catch(e){demoMode=true;$('connectionMsg').textContent='Could not connect. Check IP, same Wi-Fi, ESP32 API and CORS. Demo remains available.';}}
+async function poll(){const base=$('endpoint').value.replace(/\/$/,'');const r=await fetch(base+'/data',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();$('temp').innerHTML=Number(d.temperature).toFixed(1)+'<span class="unit"> °C</span>';$('dist').innerHTML=Number(d.distance).toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=Number(d.distance).toFixed(1)+'<span class="unit"> cm</span>';if(Array.isArray(d.relays))states=d.relays.map(Boolean);renderRelays();$('link').textContent='ONLINE';$('statusText').textContent='DEVICE CONNECTED';$('statusDot').style.background='var(--green)';$('connectionMsg').textContent='Connected to ESP32.'}
+$('connect').onclick=connect;$('demo').onclick=()=>{demoMode=true;if(timer)clearInterval(timer);$('link').textContent='DEMO';$('statusText').textContent='DEMO MODE';$('statusDot').style.background='var(--orange)';$('connectionMsg').textContent='Simulated readings. No physical device commands are sent.';updateDemo()};
+
+let peopleInCount=0,peopleOutCount=0;
+function renderPeople(){
+  $('peopleTotal').textContent=peopleInCount+peopleOutCount;
+  $('peopleIn').textContent=peopleInCount;
+  $('peopleOut').textContent=peopleOutCount;
+  $('peopleInside').textContent=Math.max(0,peopleInCount-peopleOutCount);
+}
+$('simulatePass').onclick=()=>{
+  // Demo-only: alternate IN and OUT to preview the counter interface.
+  if(peopleInCount<=peopleOutCount) peopleInCount++;
+  else peopleOutCount++;
+  renderPeople();
+};
+$('resetPeople').onclick=()=>{peopleInCount=0;peopleOutCount=0;renderPeople();};
+
+renderPeople();renderRelays();updateDemo();setInterval(updateDemo,1800);window.addEventListener('resize',draw);
+</script>
+</body></html>
