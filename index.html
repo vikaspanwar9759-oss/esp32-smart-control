@@ -28,6 +28,21 @@ footer{text-align:center;color:#61758e;font-size:11px;margin-top:25px}
 <body>
 <header><div class="brand"><div class="logo">⌁</div><div><strong>ESP32 SMART CONTROL</strong><small>INTELLIGENT DEVICE PLATFORM</small></div></div><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">DEMO MODE</span></div></header>
 <main>
+<section class="card full" id="loginPanel" style="max-width:480px;margin:35px auto 28px">
+  <div class="eyebrow">SECURE ACCESS</div>
+  <h2 style="margin:8px 0 5px">Sign in to your dashboard</h2>
+  <p class="note">Use the Email/Password account you created in Firebase Authentication.</p>
+  <div style="height:12px"></div>
+  <label class="note" for="loginEmail">Email address</label>
+  <input id="loginEmail" type="email" autocomplete="username" placeholder="Enter your email">
+  <div style="height:10px"></div>
+  <label class="note" for="loginPassword">Password</label>
+  <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password">
+  <div style="height:14px"></div>
+  <button class="primary" id="loginButton" style="width:100%">Sign in</button>
+  <p class="note" id="authMessage" role="status">Firebase authentication is ready. Sign in to continue.</p>
+</section>
+<div id="dashboardContent" hidden>
 <div class="hero"><div><div class="eyebrow">SYSTEM OVERVIEW / 01</div><h1>Control your world<span class="glow">.</span></h1><p>Sensor intelligence and device control in one place.</p></div><div class="chip">● SECURE DASHBOARD CONCEPT</div></div>
 <section class="grid">
 <div class="card sensor"><div class="cardhead"><span>TEMPERATURE</span><span class="icon">♨</span></div><div class="metric" id="temp">--<span class="unit"> °C</span></div><div class="sub">DS18B20 sensor</div></div>
@@ -35,7 +50,7 @@ footer{text-align:center;color:#61758e;font-size:11px;margin-top:25px}
 <div class="card sensor"><div class="cardhead"><span>ACTIVE RELAYS</span><span class="icon">ϟ</span></div><div class="metric" id="active">0<span class="unit"> / 4</span></div><div class="sub">Output channels enabled</div></div>
 <div class="card sensor"><div class="cardhead"><span>DEVICE LINK</span><span class="icon">⌁</span></div><div class="metric" style="font-size:25px" id="link">OFFLINE</div><div class="sub">Connection state</div></div>
 <div class="card wide"><h2 class="section-title">ULTRASONIC RADAR</h2><div class="radar-wrap"><div class="radar"><div class="sweep"></div><div class="blip"></div></div><div><div class="eyebrow">LIVE RANGE</div><div class="metric" id="radarValue">--<span class="unit"> cm</span></div><p class="note">Radar-style visual preview. A single fixed HC-SR04 measures distance in its direction; rotating scan requires a servo motor.</p></div></div></div>
-<div class="card side"><h2 class="section-title">DEVICE CONNECTION</h2><label class="note" for="endpoint">ESP32 local endpoint (when available)</label><div style="height:7px"></div><input id="endpoint" value="http://192.168.1.100" placeholder="http://ESP32-IP"><div style="height:10px"></div><div class="row"><button class="primary" id="connect">Connect</button><button class="secondary" id="demo">Demo</button></div><p class="note" id="connectionMsg">Demo values are simulated. Connect requires a compatible ESP32 HTTP API and matching network access.</p></div>
+<div class="card side"><h2 class="section-title">CLOUD DEVICE</h2><label class="note" for="deviceId">Firebase device ID</label><div style="height:7px"></div><input id="deviceId" value="esp32_01" placeholder="esp32-01"><div style="height:10px"></div><div class="row"><button class="primary" id="watchDevice">Load device</button><button class="secondary" id="demo">Demo</button></div><p class="note" id="connectionMsg">Sign in, then load the device. The ESP32 firmware must publish data under this device ID.</p><div style="height:10px"></div><button class="secondary" id="logoutButton">Sign out</button></div>
 <div class="card full"><div class="cardhead"><h2 class="section-title">RELAY CONTROL</h2><span class="note">MANUAL CONTROL</span></div><div class="relays" id="relays"></div><p class="note">In demo mode, switches only change this webpage. Physical control is enabled only after a real ESP32 API responds successfully.</p></div>
 
 <div class="card full" id="peopleCounter">
@@ -52,34 +67,87 @@ footer{text-align:center;color:#61758e;font-size:11px;margin-top:25px}
 
 <div class="card full"><div class="cardhead"><h2 class="section-title">SENSOR HISTORY</h2><span class="note">DEMO TREND</span></div><canvas class="chart" id="chart"></canvas><div class="history-labels"><span>Earlier</span><span>Recent</span><span>Now</span></div></div>
 </section>
-<footer>ESP32 SMART CONTROL · WEB PREVIEW · REAL DEVICE CONNECTION REQUIRES FIRMWARE + NETWORK CONFIGURATION</footer>
+<footer>ESP32 SMART CONTROL · FIREBASE CLOUD DASHBOARD · DEVICE FIRMWARE INTEGRATION REQUIRED</footer>
+</div>
 </main>
-<script>
-const names=['Relay 1 · Pump','Relay 2 · Fan','Relay 3 · Light','Relay 4 · Auxiliary'];let states=[false,false,false,false],demoMode=true,timer=null,temps=[24,24.4,24.2,24.8,25,24.7,25.2,25.1,25.5,25.3,25.8,25.6];
-const $=id=>document.getElementById(id);
-function renderRelays(){$('relays').innerHTML=names.map((n,i)=>`<div class="relay"><div><b>${n}</b><small>${states[i]?'ON':'OFF'}</small></div><button class="toggle ${states[i]?'on':''}" aria-label="Toggle ${n}" data-i="${i}"></button></div>`).join('');document.querySelectorAll('.toggle').forEach(b=>b.onclick=()=>setRelay(+b.dataset.i,!states[+b.dataset.i]));$('active').innerHTML=states.filter(Boolean).length+'<span class="unit"> / 4</span>'}
-async function setRelay(i,v){if(!demoMode){try{const u=new URL('/relay', $('endpoint').value);u.searchParams.set('ch',i+1);u.searchParams.set('state',v?1:0);const r=await fetch(u);if(!r.ok)throw Error();states[i]=v;}catch(e){$('connectionMsg').textContent='Relay command failed. Check device/API and browser network permissions.';return}}else states[i]=v;renderRelays()}
-function draw(){const c=$('chart'),dpr=devicePixelRatio||1,w=c.clientWidth,h=150;c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);x.strokeStyle='#00e5ff';x.lineWidth=2;x.beginPath();temps.forEach((v,i)=>{let px=i/(temps.length-1)*w,py=h-15-(v-20)*12;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fillStyle='#00e5ff16';x.fill()}
-function updateDemo(){if(!demoMode)return;let t=25+Math.random()*2.5,d=35+Math.random()*35;$('temp').innerHTML=t.toFixed(1)+'<span class="unit"> °C</span>';$('dist').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';temps.push(t);temps.shift();draw()}
-async function connect(){demoMode=false;$('connectionMsg').textContent='Connecting to ESP32…';try{await poll();timer=setInterval(poll,2500)}catch(e){demoMode=true;$('connectionMsg').textContent='Could not connect. Check IP, same Wi-Fi, ESP32 API and CORS. Demo remains available.';}}
-async function poll(){const base=$('endpoint').value.replace(/\/$/,'');const r=await fetch(base+'/data',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();$('temp').innerHTML=Number(d.temperature).toFixed(1)+'<span class="unit"> °C</span>';$('dist').innerHTML=Number(d.distance).toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=Number(d.distance).toFixed(1)+'<span class="unit"> cm</span>';if(Array.isArray(d.relays))states=d.relays.map(Boolean);renderRelays();$('link').textContent='ONLINE';$('statusText').textContent='DEVICE CONNECTED';$('statusDot').style.background='var(--green)';$('connectionMsg').textContent='Connected to ESP32.'}
-$('connect').onclick=connect;$('demo').onclick=()=>{demoMode=true;if(timer)clearInterval(timer);$('link').textContent='DEMO';$('statusText').textContent='DEMO MODE';$('statusDot').style.background='var(--orange)';$('connectionMsg').textContent='Simulated readings. No physical device commands are sent.';updateDemo()};
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getDatabase, ref, onValue, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
 
-let peopleInCount=0,peopleOutCount=0;
-function renderPeople(){
-  $('peopleTotal').textContent=peopleInCount+peopleOutCount;
-  $('peopleIn').textContent=peopleInCount;
-  $('peopleOut').textContent=peopleOutCount;
-  $('peopleInside').textContent=Math.max(0,peopleInCount-peopleOutCount);
-}
-$('simulatePass').onclick=()=>{
-  // Demo-only: alternate IN and OUT to preview the counter interface.
-  if(peopleInCount<=peopleOutCount) peopleInCount++;
-  else peopleOutCount++;
-  renderPeople();
+const firebaseConfig = {
+  apiKey: "AIzaSyDhNwr0QVQt2tbiRWQFqUskrNXQWAtIUs0",
+  authDomain: "esp32-smart-control-1d1c0.firebaseapp.com",
+  databaseURL: "https://esp32-smart-control-1d1c0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "esp32-smart-control-1d1c0",
+  storageBucket: "esp32-smart-control-1d1c0.firebasestorage.app",
+  messagingSenderId: "1058377346322",
+  appId: "1:1058377346322:web:91e16749bf6a20b69057cb",
+  measurementId: "G-EMWP5DBG0N"
 };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const $ = id => document.getElementById(id);
+const names = ['Relay 1 · Pump','Relay 2 · Fan','Relay 3 · Light','Relay 4 · Auxiliary'];
+let states=[false,false,false,false], demoMode=true, temps=[24,24.4,24.2,24.8,25,24.7,25.2,25.1,25.5,25.3,25.8,25.6];
+let unsubscribeDevice = null;
+function message(text){ $('authMessage').textContent=text; }
+function renderRelays(){
+  $('relays').innerHTML=names.map((n,i)=>`<div class="relay"><div><b>${n}</b><small>${states[i]?'ON':'OFF'}</small></div><button class="toggle ${states[i]?'on':''}" aria-label="Toggle ${n}" data-i="${i}" ${demoMode?'':'disabled'}></button></div>`).join('');
+  document.querySelectorAll('.toggle').forEach(b=>b.onclick=()=>setRelay(+b.dataset.i,!states[+b.dataset.i]));
+  $('active').innerHTML=states.filter(Boolean).length+'<span class="unit"> / 4</span>';
+}
+async function setRelay(i,v){
+  if(demoMode){ states[i]=v; renderRelays(); return; }
+  const deviceId=$('deviceId').value.trim();
+  try {
+    await set(ref(db,`devices/${deviceId}/commands/relays/${i+1}`),{state:v?'on':'off',updatedAt:Date.now()});
+    $('connectionMsg').textContent=`Relay ${i+1} command sent to Firebase. Waiting for ESP32 to report its actual state.`;
+  } catch(e){ $('connectionMsg').textContent='Relay command failed: '+e.message; }
+}
+function draw(){const c=$('chart');if(!c)return;const dpr=window.devicePixelRatio||1,w=c.clientWidth,h=150;c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);x.strokeStyle='#00e5ff';x.lineWidth=2;x.beginPath();temps.forEach((v,i)=>{let px=i/(temps.length-1)*w,py=h-15-(v-20)*12;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fillStyle='#00e5ff16';x.fill()}
+function updateDemo(){if(!demoMode)return;let t=25+Math.random()*2.5,d=35+Math.random()*35;$('temp').innerHTML=t.toFixed(1)+'<span class="unit"> °C</span>';$('dist').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=d.toFixed(1)+'<span class="unit"> cm</span>';temps.push(t);temps.shift();draw()}
+function stopDeviceListener(){if(unsubscribeDevice){unsubscribeDevice();unsubscribeDevice=null;}}
+function watchDevice(){
+  if(!auth.currentUser){$('connectionMsg').textContent='Please sign in first.';return;}
+  const deviceId=$('deviceId').value.trim();
+  if(!deviceId){$('connectionMsg').textContent='Enter a device ID.';return;}
+  stopDeviceListener(); demoMode=false;
+  $('connectionMsg').textContent='Listening to Firebase for device '+deviceId+'…';
+  const deviceRef=ref(db,`devices/${deviceId}`);
+  unsubscribeDevice=onValue(deviceRef,snap=>{
+    const d=snap.val();
+    if(!d){$('link').textContent='WAITING';$('statusText').textContent='NO DEVICE DATA';$('statusDot').style.background='var(--orange)';$('connectionMsg').textContent=`Firebase is connected, but no data exists at devices/${deviceId} yet. ESP32 firmware must publish it.`;return;}
+    const sensor=d.sensors||{};
+    if(Number.isFinite(Number(sensor.temperature)) && sensor.temperature!==null){$('temp').innerHTML=Number(sensor.temperature).toFixed(1)+'<span class="unit"> °C</span>';temps.push(Number(sensor.temperature));temps.shift();draw();}
+    if(Number.isFinite(Number(sensor.distance)) && sensor.distance!==null){$('dist').innerHTML=Number(sensor.distance).toFixed(1)+'<span class="unit"> cm</span>';$('radarValue').innerHTML=Number(sensor.distance).toFixed(1)+'<span class="unit"> cm</span>';}
+    const r=d.relays||{};states=[1,2,3,4].map(n=>r[n]===true||r[n]==='on'||r[n]===1);renderRelays();
+    const lastSeen=Number(d.status?.lastSeen||0);const online=Boolean(d.status?.online) && (!lastSeen || Date.now()-lastSeen<30000);
+    $('link').textContent=online?'ONLINE':'OFFLINE';$('statusText').textContent=online?'FIREBASE · DEVICE ONLINE':'FIREBASE · DEVICE OFFLINE';$('statusDot').style.background=online?'var(--green)':'var(--orange)';
+    $('connectionMsg').textContent='Firebase data received. '+(online?'ESP32 reports online.':'Waiting for a recent ESP32 heartbeat.');
+  },err=>{$('connectionMsg').textContent='Firebase read error: '+err.message;});
+}
+$('loginButton').onclick=async()=>{
+  const email=$('loginEmail').value.trim(),password=$('loginPassword').value;
+  if(!email||!password){message('Enter both email and password.');return;}
+  $('loginButton').disabled=true;message('Signing in…');
+  try{await signInWithEmailAndPassword(auth,email,password);message('Signed in successfully.');}
+  catch(e){message('Sign-in failed: '+e.message);}
+  finally{$('loginButton').disabled=false;}
+};
+$('logoutButton').onclick=async()=>{stopDeviceListener();await signOut(auth);};
+onAuthStateChanged(auth,user=>{
+  $('loginPanel').hidden=!!user;$('dashboardContent').hidden=!user;
+  if(user){$('statusText').textContent='SIGNED IN';$('connectionMsg').textContent='Signed in. Press Load device to listen for cloud data.';renderRelays();draw();}
+  else{$('statusText').textContent='SIGNED OUT';$('statusDot').style.background='var(--orange)';$('link').textContent='OFFLINE';}
+});
+$('watchDevice').onclick=watchDevice;
+$('demo').onclick=()=>{stopDeviceListener();demoMode=true;states=[false,false,false,false];$('link').textContent='DEMO';$('statusText').textContent='DEMO MODE';$('statusDot').style.background='var(--orange)';$('connectionMsg').textContent='Demo values are simulated. No Firebase or physical relay commands are sent.';renderRelays();updateDemo();};
+let peopleInCount=0,peopleOutCount=0;
+function renderPeople(){$('peopleTotal').textContent=peopleInCount+peopleOutCount;$('peopleIn').textContent=peopleInCount;$('peopleOut').textContent=peopleOutCount;$('peopleInside').textContent=Math.max(0,peopleInCount-peopleOutCount);}
+$('simulatePass').onclick=()=>{if(peopleInCount<=peopleOutCount)peopleInCount++;else peopleOutCount++;renderPeople();};
 $('resetPeople').onclick=()=>{peopleInCount=0;peopleOutCount=0;renderPeople();};
-
 renderPeople();renderRelays();updateDemo();setInterval(updateDemo,1800);window.addEventListener('resize',draw);
 </script>
 </body></html>
